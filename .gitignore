@@ -1,0 +1,30 @@
+# Build output
+dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Debug
+*.log
+debug/
+
+# Vendor (optional)
+# vendor/
+.claude/
