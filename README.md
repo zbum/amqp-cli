@@ -7,7 +7,7 @@ RabbitMQ 메시지를 전송하고 소비할 수 있는 CLI 도구입니다.
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew tap zbum/homebrew
+brew tap zbum/tap
 brew install amqp-cli
 ```
 
