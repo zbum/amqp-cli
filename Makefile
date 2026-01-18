@@ -43,18 +43,41 @@ build-windows:
 build-all: build-linux build-darwin build-windows
 
 # Release targets for Homebrew
-.PHONY: release release-tarball
+.PHONY: release release-tarball publish update-formula
 
 VERSION ?= 0.1.0
+HOMEBREW_TAP_DIR ?= /tmp/homebrew-tap
 
 release: build-all release-tarball
 
 release-tarball:
 	@mkdir -p $(DIST_DIR)/release
-	@cd $(DIST_DIR) && tar -czf release/$(BINARY_NAME)-darwin-amd64.tar.gz $(BINARY_NAME)-darwin-amd64
-	@cd $(DIST_DIR) && tar -czf release/$(BINARY_NAME)-darwin-arm64.tar.gz $(BINARY_NAME)-darwin-arm64
-	@cd $(DIST_DIR) && tar -czf release/$(BINARY_NAME)-linux-amd64.tar.gz $(BINARY_NAME)-linux-amd64
-	@cd $(DIST_DIR) && tar -czf release/$(BINARY_NAME)-linux-arm64.tar.gz $(BINARY_NAME)-linux-arm64
+	@cd $(DIST_DIR) && cp $(BINARY_NAME)-darwin-amd64 $(BINARY_NAME) && tar -czf release/$(BINARY_NAME)-darwin-amd64.tar.gz $(BINARY_NAME) && rm $(BINARY_NAME)
+	@cd $(DIST_DIR) && cp $(BINARY_NAME)-darwin-arm64 $(BINARY_NAME) && tar -czf release/$(BINARY_NAME)-darwin-arm64.tar.gz $(BINARY_NAME) && rm $(BINARY_NAME)
+	@cd $(DIST_DIR) && cp $(BINARY_NAME)-linux-amd64 $(BINARY_NAME) && tar -czf release/$(BINARY_NAME)-linux-amd64.tar.gz $(BINARY_NAME) && rm $(BINARY_NAME)
+	@cd $(DIST_DIR) && cp $(BINARY_NAME)-linux-arm64 $(BINARY_NAME) && tar -czf release/$(BINARY_NAME)-linux-arm64.tar.gz $(BINARY_NAME) && rm $(BINARY_NAME)
 	@cd $(DIST_DIR) && zip release/$(BINARY_NAME)-windows-amd64.zip $(BINARY_NAME)-windows-amd64.exe
-	@echo "\nSHA256 checksums:"
+	@echo "\n=== SHA256 checksums ==="
 	@cd $(DIST_DIR)/release && shasum -a 256 *
+	@echo "\nUpdate Formula/$(BINARY_NAME).rb with these SHA256 values"
+
+# Create GitHub release and upload assets
+gh-release:
+	@echo "Creating GitHub release v$(VERSION)..."
+	gh release create v$(VERSION) $(DIST_DIR)/release/* --title "v$(VERSION)" --notes "Release v$(VERSION)"
+
+# Update homebrew-tap repo
+update-tap:
+	@echo "Updating homebrew-tap..."
+	@rm -rf $(HOMEBREW_TAP_DIR)
+	@git clone https://github.com/zbum/homebrew-tap.git $(HOMEBREW_TAP_DIR)
+	@cp Formula/$(BINARY_NAME).rb $(HOMEBREW_TAP_DIR)/Formula/
+	@cd $(HOMEBREW_TAP_DIR) && git add Formula/$(BINARY_NAME).rb && git commit -m "Update $(BINARY_NAME) to v$(VERSION)" && git push
+	@echo "Done! homebrew-tap updated."
+
+# Full publish: release + gh-release + update-tap
+# Usage: make publish VERSION=0.2.0
+publish: release gh-release update-tap
+	@echo "\n=== Published v$(VERSION) ==="
+	@echo "1. GitHub release: https://github.com/zbum/amqp-cli/releases/tag/v$(VERSION)"
+	@echo "2. Homebrew: brew upgrade amqp-cli"
